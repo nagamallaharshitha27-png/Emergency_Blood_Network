@@ -1,0 +1,669 @@
+const express = require("express");
+const cors = require("cors");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+const PORT = process.env.PORT || 5000;
+
+/*
+====================================================
+EMERGENCY BLOOD NETWORK
+60 BLOOD BANK / HOSPITAL DEMO RECORDS
+====================================================
+NOTE:
+Blood quantities below are DEMO DATA for prototype use.
+They are NOT real-time blood availability.
+====================================================
+*/
+
+const bloodBanks = [
+  {
+    id: 1,
+    name: "Apollo Hospital Blood Centre",
+    area: "Jubilee Hills",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 12, "A-": 3, "B+": 8, "B-": 2, "O+": 15, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 2,
+    name: "Yashoda Hospitals",
+    area: "Somajiguda",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 11, "B-": 3, "O+": 18, "O-": 4, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 3,
+    name: "Yashoda Hospitals",
+    area: "Secunderabad",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 6, "B-": 1, "O+": 14, "O-": 3, "AB+": 2, "AB-": 1 }
+  },
+  {
+    id: 4,
+    name: "Care Hospitals",
+    area: "Banjara Hills",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 10, "A-": 3, "B+": 9, "B-": 2, "O+": 13, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 5,
+    name: "Osmania General Hospital",
+    area: "Afzalgunj",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 15, "A-": 4, "B+": 12, "B-": 3, "O+": 20, "O-": 5, "AB+": 6, "AB-": 2 }
+  },
+  {
+    id: 6,
+    name: "Gandhi Hospital",
+    area: "Secunderabad",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 11, "A-": 3, "B+": 8, "B-": 2, "O+": 16, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 7,
+    name: "NIMS Hospital",
+    area: "Punjagutta",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 10, "B-": 2, "O+": 17, "O-": 3, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 8,
+    name: "MNJ Institute of Oncology",
+    area: "Red Hills",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 6, "A-": 2, "B+": 7, "B-": 1, "O+": 12, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 9,
+    name: "Global Hospital",
+    area: "Lakdikapul",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 5, "B-": 1, "O+": 11, "O-": 3, "AB+": 2, "AB-": 1 }
+  },
+  {
+    id: 10,
+    name: "Kamineni Hospitals",
+    area: "LB Nagar",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 13, "A-": 3, "B+": 8, "B-": 2, "O+": 16, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 11,
+    name: "Aware Gleneagles Hospital",
+    area: "LB Nagar",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 9, "B-": 2, "O+": 14, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 12,
+    name: "Star Hospitals",
+    area: "Banjara Hills",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 10, "A-": 3, "B+": 7, "B-": 2, "O+": 15, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 13,
+    name: "Chiranjeevi Eye and Blood Bank",
+    area: "Jubilee Hills",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 14, "A-": 3, "B+": 10, "B-": 2, "O+": 19, "O-": 5, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 14,
+    name: "Mahavir Hospital",
+    area: "Masab Tank",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 6, "A-": 1, "B+": 8, "B-": 2, "O+": 12, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 15,
+    name: "Image Hospital Blood Centre",
+    area: "Ameerpet",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 6, "B-": 1, "O+": 10, "O-": 2, "AB+": 2, "AB-": 1 }
+  },
+  {
+    id: 16,
+    name: "Government Maternity Hospital",
+    area: "Koti",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 12, "A-": 3, "B+": 9, "B-": 2, "O+": 15, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 17,
+    name: "Niloufer Hospital",
+    area: "Red Hills",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 10, "A-": 2, "B+": 8, "B-": 2, "O+": 13, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 18,
+    name: "NTR Memorial Trust Blood Centre",
+    area: "Banjara Hills",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 7, "B-": 2, "O+": 16, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 19,
+    name: "Indian Red Cross Blood Centre",
+    area: "Vidyanagar",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 11, "A-": 3, "B+": 9, "B-": 2, "O+": 17, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 20,
+    name: "Care Hospitals",
+    area: "Nampally",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 6, "B-": 1, "O+": 12, "O-": 3, "AB+": 2, "AB-": 1 }
+  },
+
+  // 21 - 40
+  {
+    id: 21,
+    name: "PV Blood Centre",
+    area: "Himayatnagar",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 10, "A-": 2, "B+": 8, "B-": 2, "O+": 16, "O-": 3, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 22,
+    name: "St. Theresa Hospital Blood Bank",
+    area: "Sanath Nagar",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 7, "B-": 1, "O+": 13, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 23,
+    name: "Sangam Blood Centre",
+    area: "LB Nagar",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 12, "A-": 3, "B+": 10, "B-": 2, "O+": 18, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 24,
+    name: "Sri Anjaniputhra Blood Centre",
+    area: "Kukatpally",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 8, "B-": 2, "O+": 15, "O-": 3, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 25,
+    name: "Aayush Blood Bank",
+    area: "Kukatpally",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 9, "B-": 2, "O+": 14, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 26,
+    name: "Rudhira Voluntary Blood Bank",
+    area: "Himayatnagar",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 11, "A-": 3, "B+": 7, "B-": 2, "O+": 17, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 27,
+    name: "Sanjeevini Blood Bank",
+    area: "RTC X Roads",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 6, "B-": 1, "O+": 12, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 28,
+    name: "Gene Blood Bank",
+    area: "Punjagutta",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 10, "A-": 2, "B+": 9, "B-": 2, "O+": 15, "O-": 3, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 29,
+    name: "Adithya Hospital Blood Bank",
+    area: "Koti",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 6, "B-": 1, "O+": 11, "O-": 2, "AB+": 2, "AB-": 1 }
+  },
+  {
+    id: 30,
+    name: "MSN Blood Centre",
+    area: "Uppal",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 8, "B-": 2, "O+": 16, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 31,
+    name: "Aaraadhya Blood Centre",
+    area: "Kukatpally",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 7, "B-": 1, "O+": 13, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 32,
+    name: "Abhaya Blood Centre",
+    area: "LB Nagar",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 10, "A-": 3, "B+": 9, "B-": 2, "O+": 15, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 33,
+    name: "Hyderabad Blood Bank",
+    area: "New Malakpet",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 8, "B-": 2, "O+": 14, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 34,
+    name: "Gleneagles AWARE Hospital Blood Bank",
+    area: "Saroornagar",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 10, "B-": 2, "O+": 17, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 35,
+    name: "Star Hospitals Blood Bank",
+    area: "Banjara Hills",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 12, "A-": 3, "B+": 9, "B-": 2, "O+": 18, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 36,
+    name: "Owaisi Hospital Blood Centre",
+    area: "Santosh Nagar",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 13, "A-": 3, "B+": 11, "B-": 3, "O+": 19, "O-": 5, "AB+": 5, "AB-": 2 }
+  },
+  {
+    id: 37,
+    name: "Princess Esra Hospital Blood Centre",
+    area: "Shah Ali Banda",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 7, "B-": 1, "O+": 13, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 38,
+    name: "Modern Government Maternity Hospital Blood Centre",
+    area: "Petlaburz",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 11, "A-": 3, "B+": 9, "B-": 2, "O+": 16, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 39,
+    name: "Indian Red Cross Blood Centre",
+    area: "Vidyanagar",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 10, "A-": 2, "B+": 8, "B-": 2, "O+": 17, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 40,
+    name: "Chiranjeevi Eye and Blood Bank",
+    area: "Jubilee Hills",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 14, "A-": 3, "B+": 10, "B-": 2, "O+": 19, "O-": 5, "AB+": 5, "AB-": 1 }
+  },
+
+  // 41 - 60
+  {
+    id: 41,
+    name: "Basavatarakam Indo-American Cancer Hospital Blood Centre",
+    area: "Banjara Hills",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 10, "A-": 2, "B+": 8, "B-": 2, "O+": 14, "O-": 3, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 42,
+    name: "Century Super Speciality Hospitals Blood Centre",
+    area: "Banjara Hills",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 7, "B-": 1, "O+": 12, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 43,
+    name: "NIGL Blood Centre",
+    area: "Banjara Hills",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 8, "B-": 2, "O+": 15, "O-": 3, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 44,
+    name: "Aster Prime Blood Bank",
+    area: "Ameerpet",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 11, "A-": 3, "B+": 9, "B-": 2, "O+": 16, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 45,
+    name: "HARD Society Blood Bank",
+    area: "Red Hills",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 6, "B-": 1, "O+": 11, "O-": 2, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 46,
+    name: "Deccan's Blood Centre",
+    area: "Ameerpet",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 7, "B-": 2, "O+": 13, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 47,
+    name: "Owaisi Hospital and Research Centre Blood Centre",
+    area: "Kanchanbagh",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 12, "A-": 3, "B+": 10, "B-": 2, "O+": 18, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 48,
+    name: "Princess Esra Hospital Blood Centre",
+    area: "Shah Ali Banda",
+    city: "Hyderabad",
+    type: "Hospital Attached",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 8, "B-": 1, "O+": 14, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 49,
+    name: "Nizamia General Hospital Blood Bank",
+    area: "Charminar",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 10, "A-": 2, "B+": 8, "B-": 2, "O+": 15, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 50,
+    name: "Gandhi Hospital Blood Centre",
+    area: "Secunderabad",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 13, "A-": 3, "B+": 10, "B-": 3, "O+": 19, "O-": 5, "AB+": 5, "AB-": 2 }
+  },
+  {
+    id: 51,
+    name: "Niloufer Hospital Blood Centre",
+    area: "Red Hills",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 11, "A-": 3, "B+": 9, "B-": 2, "O+": 16, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 52,
+    name: "MNJ Institute of Oncology Blood Centre",
+    area: "Red Hills",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 7, "B-": 2, "O+": 13, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 53,
+    name: "NIMS Blood Centre",
+    area: "Punjagutta",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 12, "A-": 3, "B+": 11, "B-": 2, "O+": 18, "O-": 4, "AB+": 5, "AB-": 1 }
+  },
+  {
+    id: 54,
+    name: "Government Maternity Hospital Blood Centre",
+    area: "Nayapool",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 7, "B-": 2, "O+": 14, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 55,
+    name: "King Koti Hospital Blood Bank",
+    area: "King Koti",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 6, "B-": 1, "O+": 12, "O-": 3, "AB+": 2, "AB-": 1 }
+  },
+  {
+    id: 56,
+    name: "Malakpet Hospital Blood Bank",
+    area: "Malakpet",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 10, "A-": 2, "B+": 8, "B-": 2, "O+": 15, "O-": 4, "AB+": 4, "AB-": 1 }
+  },
+  {
+    id: 57,
+    name: "Nampally Hospital Blood Bank",
+    area: "Nampally",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 7, "A-": 2, "B+": 7, "B-": 1, "O+": 11, "O-": 2, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 58,
+    name: "TB and Chest Hospital Blood Bank",
+    area: "Erragadda",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 8, "A-": 2, "B+": 6, "B-": 1, "O+": 12, "O-": 3, "AB+": 2, "AB-": 1 }
+  },
+  {
+    id: 59,
+    name: "ESI Hospital Erragadda Blood Bank",
+    area: "Erragadda",
+    city: "Hyderabad",
+    type: "Government",
+    phone: "",
+    blood: { "A+": 9, "A-": 2, "B+": 8, "B-": 2, "O+": 13, "O-": 3, "AB+": 3, "AB-": 1 }
+  },
+  {
+    id: 60,
+    name: "Indian Red Cross Blood Centre",
+    area: "Vidyanagar",
+    city: "Hyderabad",
+    type: "Blood Centre",
+    phone: "",
+    blood: { "A+": 11, "A-": 3, "B+": 9, "B-": 2, "O+": 17, "O-": 4, "AB+": 4, "AB-": 1 }
+  }
+];
+
+/*
+====================================================
+SEARCH API
+====================================================
+*/
+
+app.get("/api/organizations/search", (req, res) => {
+
+    const bloodGroup = req.query.bloodGroup;
+    const location = req.query.location;
+
+    console.log("--------------------------------");
+    console.log("Blood Group:", bloodGroup);
+    console.log("Location:", location);
+
+    if (!bloodGroup || !location) {
+        return res.status(400).json({
+            success: false,
+            message: "Blood group and location are required"
+        });
+    }
+
+    const searchLocation = location.toLowerCase().trim();
+
+    const results = bloodBanks
+        .filter(bank => {
+
+            const cityMatch =
+                bank.city.toLowerCase().includes(searchLocation);
+
+            const areaMatch =
+                bank.area.toLowerCase().includes(searchLocation);
+
+            return cityMatch || areaMatch;
+        })
+        .filter(bank => {
+
+            return (
+                bank.blood[bloodGroup] !== undefined &&
+                bank.blood[bloodGroup] > 0
+            );
+
+        })
+        .map(bank => {
+
+            return {
+                id: bank.id,
+                name: bank.name,
+                area: bank.area,
+                city: bank.city,
+                type: bank.type,
+                phone: bank.phone,
+                bloodGroup: bloodGroup,
+                unitsAvailable: bank.blood[bloodGroup]
+            };
+
+        });
+
+    console.log("Results:", results.length);
+
+    res.json({
+        success: true,
+        count: results.length,
+        results: results
+    });
+});
+
+/*
+====================================================
+GET ALL BLOOD BANKS
+====================================================
+*/
+
+app.get("/api/organizations", (req, res) => {
+
+    res.json({
+        success: true,
+        count: bloodBanks.length,
+        results: bloodBanks
+    });
+
+});
+
+/*
+====================================================
+SERVER
+====================================================
+*/
+
+app.listen(PORT, () => {
+
+    console.log("");
+    console.log("========================================");
+    console.log("  EMERGENCY BLOOD NETWORK");
+    console.log("========================================");
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Total blood-bank records: ${bloodBanks.length}`);
+    console.log("========================================");
+    console.log("");
+
+});

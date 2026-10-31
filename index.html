@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Emergency Blood Network</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            padding: 25px;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #b30000;
+            margin-bottom: 25px;
+        }
+
+        .search-box {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+        }
+
+        .search-box h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            margin-bottom: 7px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 7px;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 13px;
+            border: none;
+            border-radius: 7px;
+            background: #d00000;
+            color: white;
+            font-size: 17px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #a00000;
+        }
+
+        .location-button {
+            background: #333;
+        }
+
+        .location-button:hover {
+            background: #111;
+        }
+
+        #locationStatus {
+            margin-top: 10px;
+            color: #168000;
+            font-weight: bold;
+        }
+
+        #bloodResults {
+            margin-top: 25px;
+        }
+
+        .patient-info {
+            background: white;
+            padding: 18px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #d00000;
+        }
+
+        .blood-bank-card {
+            background: white;
+            margin-bottom: 15px;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #d00000;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .blood-bank-card h3 {
+            color: #b30000;
+            margin-bottom: 12px;
+        }
+
+        .blood-bank-card p {
+            margin: 8px 0;
+        }
+
+        .distance {
+            font-size: 18px;
+            color: #168000;
+            font-weight: bold;
+        }
+
+        .loading {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .error {
+            background: #ffe5e5;
+            color: #a00000;
+            padding: 18px;
+            border-radius: 10px;
+        }
+
+        .success {
+            color: #168000;
+            margin-bottom: 15px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <h1>🩸 Emergency Blood Network</h1>
+
+
+    <div class="search-box">
+
+        <h2>🚨 Emergency Blood Request</h2>
+
+
+        <!-- PATIENT NAME -->
+
+        <label for="patientName">
+            Patient Name
+        </label>
+
+        <input
+            type="text"
+            id="patientName"
+            placeholder="Enter patient name"
+        >
+
+
+        <!-- ADMITTED HOSPITAL -->
+
+        <label for="patientHospital">
+            Patient Admitted Hospital
+        </label>
+
+        <input
+            type="text"
+            id="patientHospital"
+            placeholder="Enter hospital name"
+        >
+
+
+        <!-- BLOOD GROUP -->
+
+        <label for="availabilityBloodGroup">
+            Required Blood Group
+        </label>
+
+        <select id="availabilityBloodGroup">
+
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+
+        </select>
+
+
+        <!-- MANUAL LOCATION -->
+
+        <label for="availabilityLocation">
+            Location / Area
+        </label>
+
+        <input
+            type="text"
+            id="availabilityLocation"
+            placeholder="Enter city or area"
+        >
+
+
+        <!-- GPS -->
+
+        <button
+            type="button"
+            class="location-button"
+            onclick="getCurrentLocation()">
+
+            📍 Use My Current Location
+
+        </button>
+
+
+        <div id="locationStatus"></div>
+
+
+        <!-- SEARCH -->
+
+        <button
+            type="button"
+            onclick="findBlood()">
+
+            🔎 Find Nearby Blood Banks
+
+        </button>
+
+    </div>
+
+
+    <div id="bloodResults"></div>
+
+</div>
+
+
+
+<script>
+
+const BLOOD_API_URL =
+    "http://localhost:5000";
+
+
+// ==========================================
+// GPS VARIABLES
+// ==========================================
+
+let userLatitude = null;
+let userLongitude = null;
+
+
+// ==========================================
+// GET CURRENT GPS LOCATION
+// ==========================================
+
+function getCurrentLocation() {
+
+    const status =
+        document.getElementById("locationStatus");
+
+
+    if (!navigator.geolocation) {
+
+        status.innerHTML =
+            "❌ GPS is not supported by this browser.";
+
+        return;
+
+    }
+
+
+    status.innerHTML =
+        "📡 Getting your location...";
+
+
+    navigator.geolocation.getCurrentPosition(
+
+        function(position) {
+
+            userLatitude =
+                position.coords.latitude;
+
+            userLongitude =
+                position.coords.longitude;
+
+
+            status.innerHTML =
+                "✅ Current location detected.";
+
+
+            console.log(
+                "Latitude:",
+                userLatitude
+            );
+
+            console.log(
+                "Longitude:",
+                userLongitude
+            );
+
+        },
+
+        function(error) {
+
+            console.error(error);
+
+
+            status.innerHTML =
+                "❌ Location permission denied. Please allow location access.";
+
+        },
+
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+
+    );
+
+}
+
+
+// ==========================================
+// FIND BLOOD
+// ==========================================
+
+async function findBlood() {
+
+    const patientName =
+        document.getElementById(
+            "patientName"
+        ).value.trim();
+
+
+    const patientHospital =
+        document.getElementById(
+            "patientHospital"
+        ).value.trim();
+
+
+    const bloodGroup =
+        document.getElementById(
+            "availabilityBloodGroup"
+        ).value;
+
+
+    const manualLocation =
+        document.getElementById(
+            "availabilityLocation"
+        ).value.trim();
+
+
+    const resultDiv =
+        document.getElementById(
+            "bloodResults"
+        );
+
+
+    // ======================================
+    // VALIDATION
+    // ======================================
+
+    if (!patientName) {
+
+        resultDiv.innerHTML = `
+            <div class="error">
+                ⚠️ Please enter patient name.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    if (!patientHospital) {
+
+        resultDiv.innerHTML = `
+            <div class="error">
+                ⚠️ Please enter admitted hospital name.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ======================================
+    // GPS REQUIRED FOR NEARBY SEARCH
+    // ======================================
+
+    if (
+        userLatitude === null ||
+        userLongitude === null
+    ) {
+
+        resultDiv.innerHTML = `
+            <div class="error">
+                📍 Please click
+                <strong>"Use My Current Location"</strong>
+                and allow location permission.
+            </div>
+        `;
+
+        return;
+    }
+
+
+    // ======================================
+    // LOADING
+    // ======================================
+
+    resultDiv.innerHTML = `
+
+        <div class="loading">
+
+            🔄 Finding nearby
+            <strong>${bloodGroup}</strong>
+            blood banks...
+
+        </div>
+
+    `;
+
+
+    try {
+
+        const url =
+            `${BLOOD_API_URL}/api/organizations/nearby` +
+
+            `?bloodGroup=${encodeURIComponent(bloodGroup)}` +
+
+            `&latitude=${userLatitude}` +
+
+            `&longitude=${userLongitude}`;
+
+
+        console.log(
+            "Request:",
+            url
+        );
+
+
+        const response =
+            await fetch(url);
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                "Server error: " +
+                response.status
+            );
+
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "API Response:",
+            data
+        );
+
+
+        // ==================================
+        // NO RESULTS
+        // ==================================
+
+        if (
+            !data.results ||
+            data.results.length === 0
+        ) {
+
+            resultDiv.innerHTML = `
+
+                <div class="error">
+
+                    <h3>
+                        🩸 No Nearby Blood Banks Found
+                    </h3>
+
+                    <p>
+                        No ${bloodGroup} blood
+                        was found within
+                        25 km of your current location.
+                    </p>
+
+                </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        // ==================================
+        // DISPLAY RESULTS
+        // ==================================
+
+        resultDiv.innerHTML = `
+
+            <div class="patient-info">
+
+                <h3>
+                    🚨 Emergency Request
+                </h3>
+
+                <p>
+                    👤 <strong>Patient:</strong>
+                    ${patientName}
+                </p>
+
+                <p>
+                    🏥 <strong>Admitted Hospital:</strong>
+                    ${patientHospital}
+                </p>
+
+                <p>
+                    🩸 <strong>Required Blood:</strong>
+                    ${bloodGroup}
+                </p>
+
+            </div>
+
+
+            <h2 class="success">
+
+                🩸 ${data.count}
+                Nearby Blood Bank(s)
+
+            </h2>
+
+
+            ${data.results.map(bank => `
+
+                <div class="blood-bank-card">
+
+                    <h3>
+                        🏥 ${bank.name}
+                    </h3>
+
+
+                    <p>
+
+                        📍
+                        <strong>Location:</strong>
+
+                        ${bank.area},
+                        ${bank.city}
+
+                    </p>
+
+
+                    <p class="distance">
+
+                        📏
+                        ${bank.distance} km away
+
+                    </p>
+
+
+                    <p>
+
+                        🩸
+                        <strong>Blood Group:</strong>
+
+                        ${bank.bloodGroup}
+
+                    </p>
+
+
+                    <p>
+
+                        🧪
+                        <strong>Available Units:</strong>
+
+                        ${bank.unitsAvailable}
+
+                    </p>
+
+
+                    <button
+                        onclick="requestBlood(
+                            '${bank.name}',
+                            '${bank.bloodGroup}',
+                            '${patientName}',
+                            '${patientHospital}'
+                        )">
+
+                        🚨 Request Blood
+
+                    </button>
+
+                </div>
+
+            `).join("")}
+
+        `;
+
+    }
+
+
+    catch(error) {
+
+        console.error(error);
+
+
+        resultDiv.innerHTML = `
+
+            <div class="error">
+
+                <h3>
+                    ❌ Unable to connect to server
+                </h3>
+
+                <p>
+                    Make sure your Node.js server
+                    is running on port 5000.
+                </p>
+
+                <p>
+                    ${error.message}
+                </p>
+
+            </div>
+
+        `;
+
+    }
+
+}
+
+
+// ==========================================
+// REQUEST BLOOD
+// ==========================================
+
+function requestBlood(
+    bankName,
+    bloodGroup,
+    patientName,
+    hospital
+) {
+
+    alert(
+
+        "🚨 BLOOD REQUEST SENT\n\n" +
+
+        "Patient: " +
+        patientName +
+
+        "\nHospital: " +
+        hospital +
+
+        "\nBlood Group: " +
+        bloodGroup +
+
+        "\nBlood Bank: " +
+        bankName
+
+    );
+
+}
+
+</script>
+
+
+</body>
+
+</html>
